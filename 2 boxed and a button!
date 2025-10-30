@@ -1,19 +1,35 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Login Page</title>
-  </head>
-  <body>
-    <h2>Login</h2>
-    <form action="" method=""> // address of the database.
+	<style>
+	div{
+			height: 300px;
+			width: 300px;
+			margin: auto;
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
 
-      <label for="email">Email:</label>
-      <input type="text" id="email" name="email"><br><br>
+	}
+	</style>
+	<head>
+		<title>Login Page</title>
+	</head>
+	<body>
+	<div>
+		<h2>Login</h2>
+		<form action="" method=""> 
 
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password"><br><br>
+		<label for="email">Email:</label>
+		<input type="text" id="email" name="email"><br><br>
 
-      <button type="submit">Sign In</button>
-    </form>
-  </body>
+		<label for="password">Password:</label>
+		<input type="password" id="password" name="password"><br><br>
+
+		<button type="submit">Sign In</button>
+		</form>
+	</div>
+	</body>
 </html>
+
