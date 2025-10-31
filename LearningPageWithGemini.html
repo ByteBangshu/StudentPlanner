@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Syllabus Task Extractor</title>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+      }
+    }
+    </script>
+</head>
+<body>
+
+    <h1>Learning Page</h1>
+    <p>Upload the class syllabus to create a to-do list!</p>
+
+    <form id="syllabusForm">
+        <input type="file" id="myFile" name="filename" required>
+        <input type="submit" value="Extract Tasks">
+    </form>
+    
+    <p id="fileName"></p>
+    <div id="loading" style="display: none;">Analyzing syllabus... please wait.</div>
+    <div id="error" style="color: red;"></div>
+
+    <h2>Extracted Tasks</h2>
+    <ul id="taskList"></ul>
+
+    <script type="module">
+        import { GoogleGenAI, Type } from "@google/genai";
+
+        const syllabusForm = document.getElementById('syllabusForm');
+        const fileInput = document.getElementById('myFile');
+        const fileNameDisplay = document.getElementById('fileName');
+        const loadingIndicator = document.getElementById('loading');
+        const errorDisplay = document.getElementById('error');
+        const taskList = document.getElementById('taskList');
+
+        fileInput.onchange = () => {
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = `Selected file: ${fileInput.files[0].name}`;
+            } else {
+                fileNameDisplay.textContent = '';
+            }
+        };
+
+
+        syllabusForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const file = fileInput.files[0];
+            if (!file) {
+                errorDisplay.textContent = 'Please select a file first.';
+                return;
+            }
+            taskList.innerHTML = '';
+            errorDisplay.textContent = '';
+            loadingIndicator.style.display = 'block';
+
+            try {
+                const base64Data = await fileToBase64(file);
+                const tasks = await runGemini({
+                    mimeType: file.type,
+                    data: base64Data,
+                });
+
+                if (tasks && tasks.length > 0) {
+                    tasks.forEach(task => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${task.task} - Due: ${task.dueDate}`;
+                        taskList.appendChild(listItem);
+                    });
+                } else {
+                    taskList.innerHTML = '<li>No tasks with specific due dates were found.</li>';
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorDisplay.textContent = `Error: ${err.message}`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        });
+
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = (error) => reject(error);
+            });
+        }
+
+        
+        async function runGemini(file) {
+
+            // I'm not sure how to hide my API Key so pls help with that
+            const ai = new GoogleGenAI({ apiKey: "AIzaSyDayqQ-Wwc8sMRuUwNhIQ4aAnSjJQ0Z9lM"});
+
+            const prompt = `
+                Please analyze the following syllabus document. Your task is to identify and extract all tasks, assignments, quizzes, exams, and projects. 
+                For each item you find, please provide a concise description of the task and the exact due date.
+                The due date MUST be in the MM/DD/YYYY format.
+                If a due date is specified as a range, use the final day of that range.
+                If a day of the week is mentioned ("due every Friday"), calculate the specific date based on a typical semester calendar; assume the course starts in late August or early September for Fall semesters and late January for Spring semesters.
+                Return the information as a JSON array of objects.
+            `;
+
+            const schema = {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        task: {
+                            type: Type.STRING,
+                            description: 'A concise description of the assignment, exam, or task.',
+                        },
+                        dueDate: {
+                            type: Type.STRING,
+                            description: 'The due date in strict MM/DD/YYYY format.',
+                        },
+                    },
+                    required: ['task', 'dueDate'],
+                },
+            };
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: {
+                    parts: [
+                        { text: prompt },
+                        {
+                            inlineData: {
+                                mimeType: file.mimeType,
+                                data: file.data,
+                            },
+                        },
+                    ],
+                },
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: schema,
+                }
+            });
+
+            const text = response.text;
+            if (!text) {
+                throw new Error("Received an empty response from the Gemini API.");
+            }
+
+            return JSON.parse(text);
+        }
+    </script>
+
+</body>
+</html>
