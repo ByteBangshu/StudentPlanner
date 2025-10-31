@@ -22,7 +22,7 @@
 	<br><br>
 	<div class="change-password-box">
     <h3>Change Password</h3>
-    <form action="" method="post">
+    <form action="#" method="post">
       <label for="current">Current Password:</label>
       <input type="password" id="current" name="current"><br><br>
 
