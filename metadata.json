@@ -1,0 +1,5 @@
+{
+  "name": "Planners",
+  "description": "An application that uses Gemini to analyze a class syllabus and automatically generate a structured to-do list of assignments, exams, and important dates.",
+  "requestFramePermissions": []
+}
